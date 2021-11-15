@@ -20,25 +20,6 @@ AMaze_Generation::AMaze_Generation()
 	//temporary
 	TempFloor = CreateDefaultSubobject<UHierarchicalInstancedStaticMeshComponent>(TEXT("TempFloor"));
 	
-	//GenerateMaze();
-	/*
-	Seed = 0;
-	SizeOfMaze = FIntPoint(10, 10);
-	TileSize = 100;
-	
-	if (InstanceManager)
-	{
-		InstanceManager->RemoveAllInstances();
-		SizeOfMaze.X = (SizeOfMaze.X /2) * 2;
-		SizeOfMaze.Y = (SizeOfMaze.Y /2) * 2;
-	}
-
-	TSet<FIntPoint> PathTiles_Out, EndTiles_Out;
-	GenerateMaze(Seed, SizeOfMaze, &PathTiles_Out, &EndTiles_Out);
-	UE_LOG(LogTemp,Warning, TEXT("Constructor"));
-	PathTiles = PathTiles_Out;
-	EndPaths = EndTiles_Out;
-	*/
 }
 
 // Called when the game starts or when spawned
@@ -61,41 +42,13 @@ void AMaze_Generation::OnConstruction(const FTransform& Transform)
 	//Forcing the value to be an even number
 	SizeOfMaze.X = (SizeOfMaze.X / 2) * 2;
 	SizeOfMaze.Y = (SizeOfMaze.Y / 2) * 2;
-	/*GenerateMaze();
-	TArray<FIntPoint> PathTilesArray = PathTiles.Array();
-	for (int i = 0; i < PathTilesArray.Num() - 1; i++)
-	{
-		FIntPoint Temp = PathTilesArray[i];
-		FVector TempLoc = FVector(Temp.X * TileSize, Temp.Y * TileSize, 0);
-		TempFloor->AddInstance(FTransform(TempLoc));
-	}
-	*/
-	B_GenerateMaze(Seed, SizeOfMaze, &PathTiles, &EndPaths);
+	GenerateMaze(Seed, SizeOfMaze, &PathTiles, &EndPaths);
 	TArray<FIntPoint> PathTilesArray = PathTiles.Array();
 	for (int i = 0; i < PathTiles.Num(); i++)
 	{
 		FIntPoint Temp = PathTilesArray[i];
 		FVector TempLoc = FVector(Temp.X * TileSize, Temp.Y * TileSize, 0);
 		TempFloor->AddInstance(FTransform(TempLoc));
-	}
-}
-
-void AMaze_Generation::GenerateMaze()
-{
-	//This removes the Old Maze from the sets. This does not erase the mesh instances. This will be handles by the instance manager
-	PathTiles.Empty();
-	EndPaths.Empty();
-	TempFloor->ClearInstances();
-	
-	
-	UKismetMathLibrary::SetRandomStreamSeed(RandStream, Seed);
-	FIntPoint StartingLocation = GetRandLocInBounds(RandStream);
-	FIntPoint CurrentLocation = StartingLocation;
-	AddNeighbourLocation(RandStream, CurrentLocation);
-	while (ToCheck.Num() > 0)
-	{
-		Backtrack(CurrentLocation);
-		AddNeighbourLocation(RandStream, CurrentLocation);
 	}
 }
 
@@ -107,37 +60,6 @@ FIntPoint AMaze_Generation::GetRandLocInBounds(FRandomStream L_RandStream)
 	RandomLocation.Y = UKismetMathLibrary::RandomIntegerInRangeFromStream(0, SizeOfMaze.Y, L_RandStream);
 	
 	return RandomLocation;
-}
-
-void AMaze_Generation::AddNeighbourLocation(FRandomStream L_RandStream, FIntPoint CurrentLoc)
-{
-	int NeighbourIndex = UKismetMathLibrary::RandomIntegerInRangeFromStream(0, 3, L_RandStream);
-	FIntPoint Floor, Bridge;
-	GetNeighbourAndBridge(NeighbourIndex, CurrentLoc, &Floor, &Bridge);
-	bool bValid = CheckIsValidLocation(Floor);
-	if (bValid)
-	{
-		//GetNeighbourAndBridge(NeighbourIndex, CurrentLoc, &Floor, &Bridge); //This function call may not be necessary
-		PathTiles.Emplace(Floor);
-		BridgeTiles.Emplace(Bridge);
-		ToCheck.Emplace(Floor);
-		CurrentLoc = Floor;
-		AddNeighbourLocation(L_RandStream, CurrentLoc);
-	} else
-	{
-		int N = 0;
-		while (N <= 4)
-		{
-			NeighbourIndex = UKismetMathLibrary::SelectInt(0, NeighbourIndex ++, NeighbourIndex + 1 >= 4);
-			N++;
-		}
-		int NeighbourCount = GetNeighbourCount(CurrentLoc);
-		//indicates it is an end tile
-		if (NeighbourCount == 1)
-		{
-			EndPaths.Emplace(CurrentLoc);
-		}
-	}
 }
 
 void AMaze_Generation::GetNeighbourAndBridge(int L_Index, FIntPoint Location, FIntPoint* Floor, FIntPoint* Bridge)
@@ -198,21 +120,7 @@ int AMaze_Generation::GetNeighbourCount(FIntPoint Location)
 	return Counter;
 }
 
-void AMaze_Generation::Backtrack(FIntPoint CurrentLoc)
-{
-	TArray<FIntPoint> ToCheckArray = ToCheck.Array();
-	CurrentLoc = ToCheckArray.Last();
-	ToCheck.Remove(CurrentLoc);
-	if (BridgeTiles.Num() > 0)
-	{
-		TArray<FIntPoint> BridgeTilesArray = BridgeTiles.Array();
-    	PathTiles.Emplace(BridgeTilesArray.Last());
-    	BridgeTiles.Remove(BridgeTilesArray.Last());	
-	}
-	
-}
-
-void AMaze_Generation::B_GenerateMaze(int L_Seed, FIntPoint L_SizeOfMaze, TSet<FIntPoint>* PathTiles_Out,
+void AMaze_Generation::GenerateMaze(int L_Seed, FIntPoint L_SizeOfMaze, TSet<FIntPoint>* PathTiles_Out,
 	TSet<FIntPoint>* EndPaths_Out)
 {
 	PathTiles_Out->Empty();
@@ -224,46 +132,21 @@ void AMaze_Generation::B_GenerateMaze(int L_Seed, FIntPoint L_SizeOfMaze, TSet<F
 	FIntPoint StartingLocation = GetRandLocInBounds(RandStream);
 	FIntPoint CurrentLocation = StartingLocation;
 	
-	AddNeighbourLoc_B(SizeOfMaze_L, &RandStream, &CurrentLocation, PathTiles_Out, &BridgeTiles, &ToCheck, EndPaths_Out);
+	AddNeighbourLoc(SizeOfMaze_L, &RandStream, &CurrentLocation, PathTiles_Out, &BridgeTiles, &ToCheck, EndPaths_Out);
 	while (ToCheck.Num() > 0)
 	{
-		BackTrack_B(&CurrentLocation, &ToCheck, &BridgeTiles, PathTiles_Out);
-		AddNeighbourLoc_B(SizeOfMaze_L, &RandStream, &CurrentLocation, PathTiles_Out, &BridgeTiles, &ToCheck, EndPaths_Out);
+		BackTrack(&CurrentLocation, &ToCheck, &BridgeTiles, PathTiles_Out);
+		AddNeighbourLoc(SizeOfMaze_L, &RandStream, &CurrentLocation, PathTiles_Out, &BridgeTiles, &ToCheck, EndPaths_Out);
 	}
 }
 
-void AMaze_Generation::AddNeighbourLoc_B(FIntPoint* L_SizeOfMaze, FRandomStream* L_RandStream, FIntPoint* CurrentLocation,
+void AMaze_Generation::AddNeighbourLoc(FIntPoint* L_SizeOfMaze, FRandomStream* L_RandStream, FIntPoint* CurrentLocation,
 	TSet<FIntPoint>* L_PathTiles, TSet<FIntPoint>* L_BridgeTiles, TSet<FIntPoint>* L_ToCheck, TSet<FIntPoint>* L_EndPaths)
 {
 	int NeighbourIndex = UKismetMathLibrary::RandomIntegerInRangeFromStream(0, 3, *L_RandStream);
 	FIntPoint Floor, Bridge;
 	GetNeighbourAndBridge(NeighbourIndex, *CurrentLocation, &Floor, &Bridge);
-	/*hbool bValid = CheckIsValidLocation(Floor);
-	if (bValid)
-	{
-		L_PathTiles->Emplace(Floor);
-		L_BridgeTiles->Emplace(Bridge);
-		L_ToCheck->Emplace(Floor);
-		AddNeighbourLoc_B(L_SizeOfMaze, L_RandStream, &Floor, L_PathTiles, L_BridgeTiles, L_ToCheck, L_EndPaths);
-	} else
-	{
-		int N = 0;
-		while (N <= 4)
-		{
-			NeighbourIndex = UKismetMathLibrary::SelectInt(0, NeighbourIndex + 1, NeighbourIndex + 1 >= 4);
-			N++;
-			if (N > 4)
-			{
-				int NeighbourCount = GetNeighbourCount(*CurrentLocation);
-				//indicates it is an end tile
-				if (NeighbourCount == 1)
-				{
-					L_EndPaths->Emplace(*CurrentLocation);
-				}
-			}
-		} 
-		
-	}*/
+
 	while (!CheckIsValidLocation(Floor))
 	{
 		if (NeighbourIndex >= 4)
@@ -289,12 +172,12 @@ void AMaze_Generation::AddNeighbourLoc_B(FIntPoint* L_SizeOfMaze, FRandomStream*
 		L_PathTiles->Emplace(Floor);
 		L_BridgeTiles->Emplace(Bridge);
 		L_ToCheck->Emplace(Floor);
-		AddNeighbourLoc_B(L_SizeOfMaze, L_RandStream, &Floor, L_PathTiles, L_BridgeTiles, L_ToCheck, L_EndPaths);
+		AddNeighbourLoc(L_SizeOfMaze, L_RandStream, &Floor, L_PathTiles, L_BridgeTiles, L_ToCheck, L_EndPaths);
 	}
 	
 }
 
-void AMaze_Generation::BackTrack_B(FIntPoint* CurrentLocation, TSet<FIntPoint>* L_ToCheck, TSet<FIntPoint>* L_BridgeTiles,
+void AMaze_Generation::BackTrack(FIntPoint* CurrentLocation, TSet<FIntPoint>* L_ToCheck, TSet<FIntPoint>* L_BridgeTiles,
 	TSet<FIntPoint>* L_PathTiles)
 {
 	TArray<FIntPoint> ToCheckArray = L_ToCheck->Array();

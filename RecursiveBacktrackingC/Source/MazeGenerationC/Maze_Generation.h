@@ -65,11 +65,8 @@ public:
 
 	virtual void OnConstruction(const FTransform& Transform) override;
 
-	void GenerateMaze();
 
 	FIntPoint GetRandLocInBounds(FRandomStream L_RandStream);
-
-	void AddNeighbourLocation(FRandomStream L_RandStream, FIntPoint CurrentLoc);
 
 	void GetNeighbourAndBridge(int L_Index, FIntPoint Location, FIntPoint* Floor, FIntPoint* Bridge);
 
@@ -81,13 +78,12 @@ public:
 
 	int GetNeighbourCount(FIntPoint Location);
 
-	void Backtrack(FIntPoint CurrentLoc);
 	
 	//Trying something new
-	void B_GenerateMaze(int L_Seed, FIntPoint L_SizeOfMaze, TSet<FIntPoint>* PathTiles_Out, TSet<FIntPoint>* EndPaths_Out);
+	void GenerateMaze(int L_Seed, FIntPoint L_SizeOfMaze, TSet<FIntPoint>* PathTiles_Out, TSet<FIntPoint>* EndPaths_Out);
 
-	void AddNeighbourLoc_B(FIntPoint* L_SizeOfMaze, FRandomStream* L_RandStream, FIntPoint* CurrentLocation, TSet<FIntPoint>* L_PathTiles,
+	void AddNeighbourLoc(FIntPoint* L_SizeOfMaze, FRandomStream* L_RandStream, FIntPoint* CurrentLocation, TSet<FIntPoint>* L_PathTiles,
 		TSet<FIntPoint>* L_BridgeTiles, TSet<FIntPoint>* L_ToCheck, TSet<FIntPoint>* L_EndPaths);
 
-	void BackTrack_B(FIntPoint* CurrentLocation, TSet<FIntPoint>* L_ToCheck, TSet<FIntPoint>* L_BridgeTiles, TSet<FIntPoint>* L_PathTiles);
+	void BackTrack(FIntPoint* CurrentLocation, TSet<FIntPoint>* L_ToCheck, TSet<FIntPoint>* L_BridgeTiles, TSet<FIntPoint>* L_PathTiles);
 };
